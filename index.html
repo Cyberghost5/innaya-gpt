@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Innaya-GPT | Innayatullah International School</title>
+  <meta name="description" content="Innaya-GPT is the dedicated AI chatbot interface for high school students at Innayatullah International School. Instant answers for feeding timetables, leadership, exam dates, clubs, and homework guidance.">
+  <meta name="theme-color" content="#0f766e">
+  <link rel="icon" type="image/svg+xml" href="assets/mascot.svg">
+
+  <!-- Tailwind CSS CDN with configuration -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdfa',
+              100: '#ccfbf1',
+              200: '#99f6e4',
+              300: '#5eead4',
+              400: '#2dd4bf',
+              500: '#14b8a6',
+              600: '#0d9488',
+              700: '#0f766e',
+              800: '#115e59',
+              900: '#134e4a',
+              950: '#042f2e',
+            },
+            academic: {
+              navy: '#0e2439',
+              slate: '#1e293b',
+              gold: '#eab308'
+            }
+          },
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="h-full bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased flex overflow-hidden">
+
+  <!-- Mobile Backdrop Overlay -->
+  <div id="sidebarBackdrop" 
+       onclick="closeMobileSidebar()" 
+       class="hidden fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-xs transition-opacity lg:hidden">
+  </div>
+
+  <!-- =============================================================== -->
+  <!-- SIDEBAR (LEFT)                                                  -->
+  <!-- =============================================================== -->
+  <aside id="sidebar" 
+         class="fixed lg:static inset-y-0 left-0 z-50 flex flex-col w-72 h-full bg-slate-100/90 dark:bg-slate-900/95 border-r border-slate-200 dark:border-slate-800 transition-all duration-300 transform -translate-x-full lg:translate-x-0 shadow-xl lg:shadow-none select-none">
+    
+    <!-- Sidebar Header: School Logo & Title -->
+    <div class="p-4 border-b border-slate-200 dark:border-slate-800/80 flex items-center justify-between">
+      <div class="flex items-center gap-3 min-w-0">
+        <!-- Logo / Mascot Avatar -->
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-600 to-teal-800 p-1 flex items-center justify-center shrink-0 shadow-md ring-2 ring-emerald-500/20">
+          <img src="assets/mascot.svg" alt="Innaya Mascot" class="w-full h-full object-contain filter drop-shadow-sm" />
+        </div>
+        <div class="min-w-0 sidebar-text">
+          <div class="flex items-center gap-1.5">
+            <span class="font-extrabold text-base tracking-tight text-slate-900 dark:text-white">Innaya-GPT</span>
+            <span class="text-[0.625rem] font-bold px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 uppercase tracking-wider">v2.4</span>
+          </div>
+          <div class="text-[0.68rem] text-slate-500 dark:text-slate-400 font-medium truncate">
+            Innayatullah Int'l School
+          </div>
+        </div>
+      </div>
+
+      <!-- Close button on Mobile -->
+      <button onclick="closeMobileSidebar()" 
+              class="lg:hidden p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+
+    <!-- New Chat Button -->
+    <div class="p-3">
+      <button onclick="createNewChat()" 
+              id="newChatButton"
+              class="w-full py-2.5 px-3.5 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white rounded-xl font-semibold text-sm shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-between group active:scale-[0.98]">
+        <div class="flex items-center gap-2">
+          <svg class="w-4 h-4 transition-transform group-hover:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path>
+          </svg>
+          <span class="sidebar-text">New Chat</span>
+        </div>
+        <kbd class="hidden sm:inline-block sidebar-text text-[0.65rem] bg-black/20 text-emerald-100 px-1.5 py-0.5 rounded font-mono">Ctrl+K</kbd>
+      </button>
+    </div>
+
+    <!-- Search Conversations -->
+    <div class="px-3 pb-2 sidebar-text">
+      <div class="relative">
+        <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+        </span>
+        <input type="text" 
+               id="searchChatInput"
+               placeholder="Search topics..." 
+               class="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-200/60 dark:bg-slate-800/60 text-slate-800 dark:text-slate-200 placeholder-slate-400 rounded-lg focus:outline-none focus:ring-1.5 focus:ring-emerald-500 transition-all border border-transparent focus:border-emerald-500">
+      </div>
+    </div>
+
+    <!-- Recent Conversation Topics -->
+    <div class="flex-1 overflow-y-auto px-2 py-1 space-y-0.5">
+      <div class="px-3 pt-2 pb-1 text-[0.68rem] font-bold text-slate-400 uppercase tracking-wider sidebar-text flex items-center justify-between">
+        <span>Recent Discussions</span>
+        <span class="text-[0.62rem] text-slate-400 font-normal">Active</span>
+      </div>
+
+      <div id="recentChatsList" class="space-y-0.5">
+        <!-- Dynamically injected conversation list -->
+      </div>
+
+      <!-- Quick School Portals Section -->
+      <div class="pt-4 px-3 sidebar-text">
+        <div class="text-[0.68rem] font-bold text-slate-400 uppercase tracking-wider mb-2">
+          Campus Resources
+        </div>
+        <div class="space-y-1 text-xs">
+          <button onclick="handleSuggestionClick('What is on the cafeteria menu today?')" class="w-full flex items-center gap-2 p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-800/60 transition-colors text-left">
+            <span>🍽️</span>
+            <span class="truncate">Scholars' Dining Hall</span>
+          </button>
+          <button onclick="handleSuggestionClick('Tell me about the Sultan Bello Library hours and book loans')" class="w-full flex items-center gap-2 p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-800/60 transition-colors text-left">
+            <span>📖</span>
+            <span class="truncate">Sultan Bello Library Hub</span>
+          </button>
+          <button onclick="openSchoolInfoModal()" class="w-full flex items-center gap-2 p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-800/60 transition-colors text-left">
+            <span>☎️</span>
+            <span class="truncate">Emergency & Admin Desk</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar Footer: Mode Toggle & Student Profile -->
+    <div class="p-3 border-t border-slate-200 dark:border-slate-800/80 bg-slate-100 dark:bg-slate-900/90 space-y-2">
+      <!-- Dark / Light Mode Toggle Button -->
+      <button onclick="toggleTheme()" 
+              id="themeToggleBtn"
+              class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-200/70 dark:hover:bg-slate-800/70 transition-colors group">
+        <div class="flex items-center gap-2.5">
+          <div id="themeIconContainer" class="p-1 rounded-lg bg-slate-200 dark:bg-slate-800">
+            <!-- Icon injected by JS -->
+          </div>
+          <span id="themeToggleText" class="sidebar-text">Dark Mode</span>
+        </div>
+        <span class="text-[0.65rem] text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 sidebar-text">Toggle</span>
+      </button>
+
+      <!-- Student Profile Card -->
+      <div class="flex items-center gap-2.5 p-2 rounded-xl bg-white dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 shadow-xs">
+        <div class="relative">
+          <div class="w-8 h-8 rounded-full bg-emerald-700 text-white font-bold text-xs flex items-center justify-center">
+            MA
+          </div>
+          <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-800"></span>
+        </div>
+        <div class="min-w-0 flex-1 sidebar-text">
+          <div class="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">Mustapha A.</div>
+          <div class="text-[0.65rem] text-emerald-600 dark:text-emerald-400 font-medium truncate">Grade 11 • Emerald Falcon</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- =============================================================== -->
+  <!-- MAIN CHAT AREA (CENTER & RIGHT)                                 -->
+  <!-- =============================================================== -->
+  <main class="flex-1 flex flex-col h-full min-w-0 bg-white dark:bg-slate-950 relative">
+
+    <!-- Top Navigation Header -->
+    <header class="h-14 border-b border-slate-200 dark:border-slate-800/80 px-4 flex items-center justify-between bg-white/90 dark:bg-slate-950/90 backdrop-blur-md z-10 shrink-0">
+      <div class="flex items-center gap-3 min-w-0">
+        <!-- Sidebar Toggle for Mobile & Desktop -->
+        <button onclick="openMobileSidebar()" 
+                class="lg:hidden p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                aria-label="Open sidebar">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+          </svg>
+        </button>
+
+        <button onclick="toggleSidebarCollapse()" 
+                class="hidden lg:flex p-2 rounded-lg text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                title="Toggle sidebar">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path>
+          </svg>
+        </button>
+
+        <!-- Current Chat Topic Badge & Title -->
+        <div class="flex items-center gap-2 min-w-0">
+          <span id="currentChatBadge" class="hidden sm:inline-flex px-2 py-0.5 text-[0.68rem] font-bold rounded-md bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 uppercase tracking-wide">
+            Campus Life
+          </span>
+          <h2 id="currentChatTitle" class="text-sm font-bold text-slate-800 dark:text-slate-100 truncate max-w-xs md:max-w-md">
+            Feeding Timetable
+          </h2>
+          <span class="inline-flex items-center gap-1 text-[0.68rem] text-emerald-600 dark:text-emerald-400 font-medium pl-2 border-l border-slate-200 dark:border-slate-800">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            AI Assistant
+          </span>
+        </div>
+      </div>
+
+      <!-- Action Icons (Feed AI Data, Export, Clear, Info) -->
+      <div class="flex items-center gap-1.5">
+        <!-- DIY AI Data Feeding Studio Button -->
+        <button onclick="openKnowledgeStudioModal()" 
+                class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-100/90 hover:bg-emerald-200/90 dark:bg-emerald-950/80 dark:hover:bg-emerald-900 text-emerald-800 dark:text-emerald-300 transition-colors shadow-xs border border-emerald-300/60 dark:border-emerald-700/60"
+                title="DIY AI Data Feeding Studio - Upload School .txt Files">
+          <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+          </svg>
+          <span class="hidden sm:inline">Feed AI Data (.txt)</span>
+        </button>
+
+        <button onclick="exportCurrentChat()" 
+                class="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                title="Export conversation as Markdown">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+          </svg>
+        </button>
+
+        <button onclick="clearCurrentMessages()" 
+                class="p-2 text-slate-500 dark:text-slate-400 hover:text-rose-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                title="Clear current messages">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+          </svg>
+        </button>
+
+        <button onclick="openSchoolInfoModal()" 
+                class="p-2 text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                title="School Information & Help Desk">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Scrollable Chat Messages Feed -->
+    <section id="chatFeed" 
+             class="flex-1 overflow-y-auto pt-6 pb-4 px-2 md:px-6 relative focus:outline-none"
+             tabindex="0"
+             aria-label="Conversation messages">
+      <!-- Chat bubbles injected dynamically via app.js -->
+    </section>
+
+    <!-- Sticky Bottom Input Area -->
+    <footer class="p-3 md:p-4 bg-gradient-to-t from-white via-white dark:from-slate-950 dark:via-slate-950 to-transparent shrink-0">
+      <div class="max-w-4xl mx-auto">
+
+        <!-- Quick suggestion pills above input -->
+        <div class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none text-xs">
+          <button onclick="handleSuggestionClick('What is the feeding timetable for today?')" 
+                  class="shrink-0 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800/80 hover:bg-emerald-50 hover:text-emerald-700 dark:hover:bg-emerald-950/60 dark:hover:text-emerald-300 border border-slate-200 dark:border-slate-700/80 transition-colors text-slate-600 dark:text-slate-300">
+            🍽️ Feeding Timetable
+          </button>
+          <button onclick="handleSuggestionClick('Who is the principal of Innayatullah International School?')" 
+                  class="shrink-0 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800/80 hover:bg-emerald-50 hover:text-emerald-700 dark:hover:bg-emerald-950/60 dark:hover:text-emerald-300 border border-slate-200 dark:border-slate-700/80 transition-colors text-slate-600 dark:text-slate-300">
+            🎓 Principal & Leadership
+          </button>
+          <button onclick="handleSuggestionClick('What are the examination rules and grading scale?')" 
+                  class="shrink-0 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800/80 hover:bg-emerald-50 hover:text-emerald-700 dark:hover:bg-emerald-950/60 dark:hover:text-emerald-300 border border-slate-200 dark:border-slate-700/80 transition-colors text-slate-600 dark:text-slate-300">
+            📅 Exam Rules & Dates
+          </button>
+          <button onclick="handleSuggestionClick('What is the senior school uniform and dress code?')" 
+                  class="shrink-0 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800/80 hover:bg-emerald-50 hover:text-emerald-700 dark:hover:bg-emerald-950/60 dark:hover:text-emerald-300 border border-slate-200 dark:border-slate-700/80 transition-colors text-slate-600 dark:text-slate-300">
+            👔 Dress Code
+          </button>
+          <button onclick="handleSuggestionClick('Tell me about the Sultan Bello Library hours')" 
+                  class="shrink-0 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800/80 hover:bg-emerald-50 hover:text-emerald-700 dark:hover:bg-emerald-950/60 dark:hover:text-emerald-300 border border-slate-200 dark:border-slate-700/80 transition-colors text-slate-600 dark:text-slate-300">
+            📖 Library Hours
+          </button>
+        </div>
+
+        <!-- Attachment Preview Container -->
+        <div id="attachmentPreviewContainer"></div>
+
+        <!-- Main Rounded Input Box Container -->
+        <div class="relative bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/90 rounded-2xl md:rounded-3xl shadow-lg focus-within:ring-2 focus-within:ring-emerald-500/50 focus-within:border-emerald-500 transition-all flex items-end p-2 gap-1.5">
+          
+          <!-- Hidden File Input for document upload -->
+          <input type="file" 
+                 id="fileUploadInput" 
+                 class="hidden" 
+                 accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg" 
+                 onchange="handleFileSelected(event)">
+
+          <!-- Attachment / Upload Button -->
+          <button onclick="triggerFileInput()" 
+                  type="button"
+                  id="attachmentButton"
+                  class="p-2.5 rounded-xl text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0" 
+                  title="Attach document or homework (PDF, DOCX, TXT)">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
+            </svg>
+          </button>
+
+          <!-- Textarea Input Field -->
+          <textarea id="messageInput"
+                    rows="1"
+                    placeholder="Ask me anything about the school..." 
+                    oninput="autoResizeInput(this)"
+                    onkeydown="handleInputKeydown(event)"
+                    class="flex-1 max-h-36 py-2.5 px-2 bg-transparent text-slate-800 dark:text-slate-100 placeholder-slate-400 text-sm md:text-base focus:outline-none resize-none leading-relaxed"></textarea>
+
+          <!-- Speech-to-Text / Microphone Button -->
+          <button onclick="toggleVoiceInput()" 
+                  type="button"
+                  id="micButton"
+                  class="p-2.5 rounded-xl text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0"
+                  title="Voice input (Speech to text)">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
+            </svg>
+          </button>
+
+          <!-- Send Button (Paper-plane icon) -->
+          <button onclick="sendMessage()" 
+                  type="button"
+                  id="sendButton"
+                  class="p-2.5 rounded-xl bg-slate-300 dark:bg-slate-700 text-slate-500 opacity-40 cursor-not-allowed transition-all shrink-0 active:scale-95 flex items-center justify-center"
+                  title="Send message">
+            <svg class="w-5 h-5 transform rotate-45 -translate-x-0.5 translate-y-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Academic Disclaimer Footer Note -->
+        <div class="mt-2 text-center text-[0.68rem] text-slate-400 dark:text-slate-500">
+          Innaya-GPT is an official AI companion for Innayatullah International School. Please verify formal academic deadlines with the administrative office.
+        </div>
+      </div>
+    </footer>
+  </main>
+
+  <!-- =============================================================== -->
+  <!-- MODAL: SCHOOL INFORMATION & DIRECTORY                           -->
+  <!-- =============================================================== -->
+  <div id="schoolInfoModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-lg w-full p-6 shadow-2xl relative">
+      <button onclick="closeSchoolInfoModal()" class="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-800 p-2 flex items-center justify-center">
+          <img src="assets/mascot.svg" alt="IIS Mascot" class="w-full h-full object-contain" />
+        </div>
+        <div>
+          <h3 class="font-bold text-lg text-slate-900 dark:text-white">Innayatullah International School</h3>
+          <p class="text-xs text-emerald-600 dark:text-emerald-400 font-medium">Knowledge Valley Campus • Emergency & Directory</p>
+        </div>
+      </div>
+
+      <div class="space-y-3 text-xs text-slate-600 dark:text-slate-300">
+        <div class="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-100 dark:border-slate-700/60">
+          <div class="font-bold text-slate-800 dark:text-white">🏥 Health Clinic & Emergency</div>
+          <div>Ground Floor, adjacent to Gate 2 (West Wing)</div>
+          <div class="text-emerald-600 dark:text-emerald-400 font-medium mt-0.5">Hotline: +234 (0) 800-IIS-HELP</div>
+        </div>
+
+        <div class="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-100 dark:border-slate-700/60">
+          <div class="font-bold text-slate-800 dark:text-white">🎓 Principal's Office & Admin Desk</div>
+          <div>Suite A-204, Administrative Block (Mon–Fri: 10:00 AM – 1:00 PM)</div>
+          <div class="text-emerald-600 dark:text-emerald-400 font-medium mt-0.5">Email: principal@innayatullah.edu.ng</div>
+        </div>
+
+        <div class="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-100 dark:border-slate-700/60">
+          <div class="font-bold text-slate-800 dark:text-white">🚌 Fleet & Bus Coordinator</div>
+          <div>Mr. Sunday Peters (Transport Office ext. 402)</div>
+          <div class="text-emerald-600 dark:text-emerald-400 font-medium mt-0.5">Departure: 5:15 PM sharp daily</div>
+        </div>
+      </div>
+
+      <div class="mt-6">
+        <button onclick="closeSchoolInfoModal()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-xl shadow transition-colors">
+          Close Directory
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =============================================================== -->
+  <!-- MODAL: KNOWLEDGE STUDIO (DIY RAG & .TXT FILE INGESTION)         -->
+  <!-- =============================================================== -->
+  <div id="knowledgeStudioModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/70 backdrop-blur-xs overflow-y-auto">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-2xl w-full p-5 sm:p-6 shadow-2xl relative my-auto max-h-[90vh] flex flex-col">
+      
+      <!-- Close Button -->
+      <button onclick="closeKnowledgeStudioModal()" class="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+
+      <!-- Modal Header -->
+      <div class="flex items-center gap-3 mb-4 shrink-0">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-800 p-2.5 flex items-center justify-center text-white text-xl shadow-md">
+          🧠
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h3 class="font-bold text-base sm:text-lg text-slate-900 dark:text-white">Innaya-GPT Knowledge Studio</h3>
+            <span class="text-[0.62rem] font-bold px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 uppercase tracking-wider">DIY RAG</span>
+          </div>
+          <p class="text-xs text-slate-500 dark:text-slate-400">
+            Feed the AI by uploading school <code class="text-emerald-600 dark:text-emerald-400">.txt</code> files. The AI chunks and searches this data in real time!
+          </p>
+        </div>
+      </div>
+
+      <!-- Live RAG Metrics Stats Bar -->
+      <div class="grid grid-cols-3 gap-2 p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200/80 dark:border-slate-700/60 mb-4 shrink-0 text-center">
+        <div>
+          <div class="text-[0.65rem] uppercase tracking-wider text-slate-400 font-bold">Documents</div>
+          <div id="studioDocCount" class="text-lg font-extrabold text-emerald-600 dark:text-emerald-400">0</div>
+        </div>
+        <div class="border-x border-slate-200 dark:border-slate-700">
+          <div class="text-[0.65rem] uppercase tracking-wider text-slate-400 font-bold">Indexed Chunks</div>
+          <div id="studioChunkCount" class="text-lg font-extrabold text-teal-600 dark:text-teal-400">0</div>
+        </div>
+        <div>
+          <div class="text-[0.65rem] uppercase tracking-wider text-slate-400 font-bold">Total Words</div>
+          <div id="studioWordCount" class="text-lg font-extrabold text-indigo-600 dark:text-indigo-400">0</div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex flex-wrap items-center gap-2 mb-4 shrink-0">
+        <input type="file" id="customKnowledgeFileInput" accept=".txt" multiple class="hidden" onchange="handleKnowledgeFileUpload(event)">
+        
+        <button onclick="document.getElementById('customKnowledgeFileInput').click()" 
+                class="flex-1 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+          </svg>
+          <span>Upload Custom .txt File</span>
+        </button>
+
+        <button onclick="loadSampleSchoolDataFiles()" 
+                class="py-2 px-3 bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-1.5">
+          <span>⚡ Load 3 IIS Sample Files</span>
+        </button>
+
+        <button onclick="clearCustomKnowledgeBase()" 
+                class="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl transition-colors" 
+                title="Clear all uploaded data">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Scrollable List of Uploaded Documents -->
+      <div class="flex-1 overflow-y-auto space-y-2 pr-1 min-h-[160px]">
+        <div class="text-[0.68rem] font-bold text-slate-400 uppercase tracking-wider mb-1">
+          Active Knowledge Files in Local Memory:
+        </div>
+        <div id="studioDocumentList" class="space-y-2">
+          <!-- Documents injected by JS -->
+        </div>
+      </div>
+
+      <!-- Educational Note for Students -->
+      <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 text-[0.72rem] text-slate-400 dark:text-slate-500 flex items-center justify-between shrink-0">
+        <span>💡 <strong>SS3 AI Concept:</strong> Files are split into chunks & indexed using keyword vectors for instant local retrieval.</span>
+        <button onclick="closeKnowledgeStudioModal()" class="px-4 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold rounded-lg text-xs transition-colors">
+          Done
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts with cache busting -->
+  <script src="js/knowledge-base.js?v=4.0"></script>
+  <script src="js/app.js?v=4.0"></script>
+</body>
+</html>

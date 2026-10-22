@@ -1,0 +1,260 @@
+/* 
+ * Innaya-GPT Custom Styling & Animations
+ * Innayatullah International School AI Interface
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --primary-navy: #0e2439;
+  --primary-emerald: #0f766e;
+  --accent-gold: #eab308;
+  --font-main: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+body {
+  font-family: var(--font-main);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.7);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(71, 85, 105, 0.5);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.8);
+}
+
+/* Typing Bouncing Dots */
+.typing-dot {
+  width: 8px;
+  height: 8px;
+  background-color: #0f766e;
+  border-radius: 50%;
+  display: inline-block;
+  animation: typingBounce 1.4s infinite ease-in-out both;
+}
+
+.dark .typing-dot {
+  background-color: #2dd4bf;
+}
+
+.typing-dot:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.typing-dot:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes typingBounce {
+  0%, 80%, 100% {
+    transform: scale(0.6);
+    opacity: 0.4;
+  }
+  40% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+}
+
+/* Pulse animation for logo & active states */
+@keyframes softPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(15, 118, 110, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(15, 118, 110, 0);
+  }
+}
+
+.pulse-badge {
+  animation: softPulse 2.5s infinite;
+}
+
+/* Markdown table styling in chat bubbles */
+.prose-chat table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 0.85rem 0;
+  font-size: 0.875rem;
+  border-radius: 0.65rem;
+  overflow: hidden;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.dark .prose-chat table {
+  border-color: rgba(51, 65, 85, 0.8);
+}
+
+.prose-chat th {
+  background-color: rgba(241, 245, 249, 0.9);
+  color: #0f172a;
+  font-weight: 600;
+  padding: 0.65rem 0.85rem;
+  text-align: left;
+  border-bottom: 1px solid #cbd5e1;
+}
+
+.dark .prose-chat th {
+  background-color: rgba(30, 41, 59, 0.9);
+  color: #f1f5f9;
+  border-bottom-color: #334155;
+}
+
+.prose-chat td {
+  padding: 0.6rem 0.85rem;
+  border-bottom: 1px solid rgba(241, 245, 249, 0.8);
+}
+
+.dark .prose-chat td {
+  border-bottom-color: rgba(51, 65, 85, 0.5);
+}
+
+.prose-chat tr:last-child td {
+  border-bottom: none;
+}
+
+.prose-chat tr:nth-child(even) td {
+  background-color: rgba(248, 250, 252, 0.5);
+}
+
+.dark .prose-chat tr:nth-child(even) td {
+  background-color: rgba(30, 41, 59, 0.35);
+}
+
+/* Markdown blockquote styling */
+.prose-chat blockquote {
+  border-left: 3.5px solid #0f766e;
+  padding-left: 0.95rem;
+  margin: 0.75rem 0;
+  font-style: italic;
+  background-color: rgba(240, 253, 250, 0.6);
+  padding-top: 0.4rem;
+  padding-bottom: 0.4rem;
+  border-radius: 0 0.5rem 0.5rem 0;
+}
+
+.dark .prose-chat blockquote {
+  border-left-color: #14b8a6;
+  background-color: rgba(19, 78, 74, 0.25);
+}
+
+/* Code block snippet styling */
+.prose-chat pre {
+  background-color: #0f172a;
+  color: #e2e8f0;
+  padding: 0.85rem 1rem;
+  border-radius: 0.6rem;
+  font-family: var(--font-mono);
+  font-size: 0.825rem;
+  overflow-x: auto;
+  margin: 0.75rem 0;
+  border: 1px solid #334155;
+}
+
+.prose-chat code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background-color: rgba(241, 245, 249, 0.9);
+  color: #0f766e;
+  padding: 0.15rem 0.35rem;
+  border-radius: 0.35rem;
+  font-weight: 500;
+}
+
+.dark .prose-chat code {
+  background-color: rgba(30, 41, 59, 0.9);
+  color: #2dd4bf;
+}
+
+/* Message Bubble Shadows */
+.bubble-shadow-ai {
+  box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.04), 0 2px 6px -1px rgba(15, 23, 42, 0.02);
+}
+
+.bubble-shadow-user {
+  box-shadow: 0 6px 20px -3px rgba(15, 118, 110, 0.3), 0 2px 6px -1px rgba(15, 118, 110, 0.15);
+}
+
+/* Glassmorphism effects */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.dark .glass-panel {
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Smooth auto-scroll behavior */
+#chatFeed {
+  scroll-behavior: smooth;
+}
+
+/* Voice input recording wave animation */
+@keyframes micWave {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); box-shadow: 0 0 15px rgba(239, 68, 68, 0.6); }
+  100% { transform: scale(1); }
+}
+
+.mic-recording {
+  animation: micWave 1.2s infinite ease-in-out;
+  background-color: #ef4444 !important;
+  color: white !important;
+}
+
+/* Tooltip animation */
+[data-tooltip] {
+  position: relative;
+}
+
+[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background: #0f172a;
+  color: #fff;
+  font-size: 0.725rem;
+  padding: 0.25rem 0.55rem;
+  border-radius: 0.35rem;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.2s ease;
+  z-index: 50;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+[data-tooltip]:hover::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
