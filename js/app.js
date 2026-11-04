@@ -12,8 +12,19 @@ const AppState = {
   theme: localStorage.getItem('innaya_theme') || 'light',
   attachedFile: null,
   speechRecognition: null,
-  isRecording: false
+  isRecording: false,
+  temperature: 0.1,
+  topK: 3,
+  backendOnline: false,
+  ollamaOnline: false,
+  activeModel: 'llama3.2:1b',
+  backendDocs: []
 };
+
+// Backend API endpoint configuration (auto-detects port 5000, Laragon port 80/443, or file://)
+const API_BASE_URL = (window.location.protocol === 'file:')
+  ? 'http://localhost:5000'
+  : (window.location.port === '5000' ? '' : 'http://localhost:5000');
 
 // Default initial conversations tailored for Innayatullah International School students
 const DEFAULT_CONVERSATIONS = [
@@ -105,7 +116,55 @@ document.addEventListener('DOMContentLoaded', () => {
   } else {
     createNewChat();
   }
+
+  // Check Local Python Backend & Ollama Engine Status
+  checkBackendHealth();
+  // Periodic background heartbeat check every 15 seconds
+  setInterval(checkBackendHealth, 15000);
 });
+
+// ===============================================================
+// BACKEND ENGINE HEALTH & STATUS BADGE
+// ===============================================================
+function updateEngineStatusBadge(backendOnline, ollamaOnline, modelName) {
+  AppState.backendOnline = backendOnline;
+  AppState.ollamaOnline = ollamaOnline;
+  if (modelName) AppState.activeModel = modelName;
+
+  const badge = document.getElementById('engineStatusBadge');
+  const dot = document.getElementById('engineStatusDot');
+  const text = document.getElementById('engineStatusText');
+  if (!badge || !dot || !text) return;
+
+  if (backendOnline && ollamaOnline) {
+    badge.className = "inline-flex items-center gap-1.5 text-[0.68rem] text-emerald-700 dark:text-emerald-300 font-bold pl-2 border-l border-slate-200 dark:border-slate-800 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-md";
+    dot.className = "w-2 h-2 rounded-full bg-emerald-500 animate-pulse";
+    text.textContent = `🟢 Ollama Active (${AppState.activeModel})`;
+  } else if (backendOnline && !ollamaOnline) {
+    badge.className = "inline-flex items-center gap-1.5 text-[0.68rem] text-amber-700 dark:text-amber-300 font-bold pl-2 border-l border-slate-200 dark:border-slate-800 bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded-md";
+    dot.className = "w-2 h-2 rounded-full bg-amber-500";
+    text.textContent = "🟡 RAG Local Fallback (Ollama Offline)";
+  } else {
+    badge.className = "inline-flex items-center gap-1.5 text-[0.68rem] text-slate-500 dark:text-slate-400 font-medium pl-2 border-l border-slate-200 dark:border-slate-800";
+    dot.className = "w-2 h-2 rounded-full bg-slate-400";
+    text.textContent = "⚪ Standalone Mode";
+  }
+}
+
+async function checkBackendHealth() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/health`, { method: 'GET' });
+    if (res.ok) {
+      const data = await res.json();
+      updateEngineStatusBadge(true, data.ollama_online, data.active_model);
+      return data;
+    }
+  } catch (e) {
+    // Backend server is not running
+    updateEngineStatusBadge(false, false, null);
+  }
+  return null;
+}
 
 // Theme Management
 function initTheme() {
@@ -435,6 +494,21 @@ function renderMessageHtml(msg, index) {
           <!-- Bubble Content -->
           <div class="bg-emerald-50/70 dark:bg-slate-800/90 text-slate-800 dark:text-slate-100 px-5 py-4 rounded-2xl rounded-tl-xs border border-emerald-100/80 dark:border-slate-700/80 bubble-shadow-ai prose-chat">
             <div class="text-sm md:text-[0.935rem] leading-relaxed select-text">${parsedContent}</div>
+            ${msg.sources && msg.sources.length > 0 ? `
+              <details class="mt-3 text-xs bg-emerald-100/60 dark:bg-slate-900/70 p-2.5 rounded-xl border border-emerald-200/70 dark:border-slate-700/70 text-slate-700 dark:text-slate-300">
+                <summary class="cursor-pointer font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5 select-none hover:text-emerald-900">
+                  <span>📄 Verified From School Records (${msg.sources.length} excerpt${msg.sources.length > 1 ? 's' : ''})</span>
+                </summary>
+                <div class="mt-2 space-y-2 pt-2 border-t border-emerald-200/60 dark:border-slate-800">
+                  ${msg.sources.map(s => `
+                    <div class="p-2 bg-white/80 dark:bg-slate-800/90 rounded-lg text-[0.75rem] border border-slate-200/60 dark:border-slate-700/50">
+                      <div class="font-bold text-emerald-700 dark:text-emerald-400">📄 ${escapeHtml(s.filename)} (Section ${s.chunk_index}):</div>
+                      <div class="text-slate-600 dark:text-slate-300 italic mt-0.5 whitespace-pre-wrap leading-relaxed">"${escapeHtml(s.text)}"</div>
+                    </div>
+                  `).join('')}
+                </div>
+              </details>
+            ` : ''}
           </div>
 
           <!-- Actions Bar -->
@@ -720,53 +794,158 @@ function sendMessage() {
   renderChatFeed();
   renderSidebar();
 
-  // Trigger AI Thinking and Response
-  simulateAIResponse(text, userMsg.attachedFileName);
+  // Trigger AI Thinking and Response via AJAX to Local Backend
+  sendToBackendAI(text, userMsg.attachedFileName);
 }
 
-function simulateAIResponse(query, attachedFileName) {
+// ===============================================================
+// AJAX BACKEND CONNECTOR & STREAMING AI INFERENCE
+// ===============================================================
+async function sendToBackendAI(query, attachedFileName) {
   AppState.isTyping = true;
   showTypingIndicator();
 
-  // Determine Answer using Knowledge Base
-  let answer = '';
+  // Special case: if user attached a file in the chat bar
   if (attachedFileName) {
-    answer = `### 📄 Document Analysis: ${attachedFileName}
+    const answer = `### 📄 Document Analysis: ${attachedFileName}
 
-I have received and indexed your document **"${attachedFileName}"**.
+I have received your document **"${attachedFileName}"**.
 
-Here is what I can do for you:
+Here is what I can do:
 1. **Summary & Key Takeaways:** Extract main concepts and dates.
-2. **Review & Proofreading:** Check clarity, grammar, and alignment with IIS academic standards.
-3. **Practice Questions:** Generate mock quiz questions based on the uploaded syllabus notes.
+2. **Review & Proofreading:** Check clarity and alignment with IIS academic standards.
+3. **Practice Questions:** Generate mock quiz questions based on the notes.
 
-Please let me know if you would like me to summarize it or assist with specific questions from this file!`;
-  } else {
-    answer = findSchoolAnswer(query);
+Ask me any specific question about this document or school topic!`;
+
+    setTimeout(() => {
+      removeTypingIndicator();
+      const currentTime = getCurrentFormattedTime();
+      const aiMsg = {
+        role: 'ai',
+        text: answer,
+        time: currentTime
+      };
+      const chat = AppState.chats.find(c => c.id === AppState.currentChatId);
+      if (chat) {
+        chat.messages.push(aiMsg);
+        saveChatsToStorage();
+        renderChatFeed();
+      }
+      AppState.isTyping = false;
+    }, 600);
+    return;
   }
 
-  // Realistic response latency (600ms - 1100ms)
-  const delay = Math.min(1200, Math.max(650, query.length * 15));
+  const currentTime = getCurrentFormattedTime();
+  const aiMsg = {
+    role: 'ai',
+    text: '',
+    time: currentTime,
+    sources: []
+  };
 
-  setTimeout(() => {
+  const chat = AppState.chats.find(c => c.id === AppState.currentChatId);
+
+  try {
+    // Send AJAX request to Python backend
+    const response = await fetch(`${API_BASE_URL}/api/chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        query: query,
+        stream: true,
+        temperature: AppState.temperature !== undefined ? AppState.temperature : 0.1,
+        top_k: AppState.topK !== undefined ? AppState.topK : 3,
+        model: AppState.activeModel || 'llama3.2:1b'
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Server returned HTTP ${response.status}`);
+    }
+
     removeTypingIndicator();
 
-    const currentTime = getCurrentFormattedTime();
-    const aiMsg = {
-      role: 'ai',
-      text: answer,
-      time: currentTime
-    };
-
-    const chat = AppState.chats.find(c => c.id === AppState.currentChatId);
+    // Push initial empty AI message so it immediately renders
     if (chat) {
       chat.messages.push(aiMsg);
+      renderChatFeed();
+    }
+
+    // Read SSE Stream token by token (ChatGPT-style typewriter effect)
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder('utf-8');
+    let buffer = '';
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop(); // keep partial trailing line
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith('data:')) continue;
+        const jsonStr = trimmed.slice(5).trim();
+        if (!jsonStr) continue;
+
+        try {
+          const data = JSON.parse(jsonStr);
+          if (data.token) {
+            aiMsg.text += data.token;
+            updateStreamingBubbleText(aiMsg.text);
+          }
+          if (data.done) {
+            if (data.sources) {
+              aiMsg.sources = data.sources;
+            }
+            if (data.ollama_online !== undefined) {
+              updateEngineStatusBadge(true, data.ollama_online, data.model);
+            }
+          }
+        } catch (jsonErr) {
+          // ignore partial JSON parse error
+        }
+      }
+    }
+
+    saveChatsToStorage();
+    renderChatFeed(); // re-render complete message with action buttons & source drawer
+    AppState.isTyping = false;
+
+  } catch (err) {
+    console.warn("Backend server not reachable, falling back to local school knowledge store:", err);
+    removeTypingIndicator();
+
+    // Fallback: Use client-side search
+    const fallbackAnswer = findSchoolAnswer(query);
+    aiMsg.text = fallbackAnswer;
+
+    if (chat) {
+      if (!chat.messages.includes(aiMsg)) {
+        chat.messages.push(aiMsg);
+      }
       saveChatsToStorage();
       renderChatFeed();
     }
 
+    updateEngineStatusBadge(false, false, null);
     AppState.isTyping = false;
-  }, delay);
+  }
+}
+
+function updateStreamingBubbleText(text) {
+  const bubbles = document.querySelectorAll('.prose-chat');
+  if (bubbles.length > 0) {
+    const lastBubble = bubbles[bubbles.length - 1];
+    lastBubble.innerHTML = `<div class="text-sm md:text-[0.935rem] leading-relaxed select-text">${parseMarkdown(text)}</div>`;
+    scrollToBottom();
+  }
 }
 
 // Typing Indicator
@@ -1073,13 +1252,79 @@ function closeKnowledgeStudioModal() {
   if (modal) modal.classList.add('hidden');
 }
 
-function renderStudioDocuments() {
-  DynamicKnowledgeStore.init();
-  const docs = DynamicKnowledgeStore.documents;
+async function renderStudioDocuments() {
   const listEl = document.getElementById('studioDocumentList');
   const docCountEl = document.getElementById('studioDocCount');
   const chunkCountEl = document.getElementById('studioChunkCount');
   const wordCountEl = document.getElementById('studioWordCount');
+
+  // Try fetching active documents directly from Python RAG backend
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/documents`);
+    if (res.ok) {
+      const data = await res.json();
+      AppState.backendDocs = data.documents || [];
+
+      if (docCountEl) docCountEl.textContent = data.total_documents || 0;
+      if (chunkCountEl) chunkCountEl.textContent = data.total_chunks || 0;
+      if (wordCountEl) wordCountEl.textContent = (data.total_words || 0).toLocaleString();
+
+      if (!listEl) return;
+
+      if (!data.documents || data.documents.length === 0) {
+        listEl.innerHTML = `
+          <div class="py-8 px-4 text-center border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
+            <div class="text-2xl mb-1">📂</div>
+            <div class="text-xs font-semibold text-slate-700 dark:text-slate-300">No school .txt files found in knowledge base</div>
+            <p class="text-[0.7rem] text-slate-400 mt-0.5">Click "Upload Custom .txt File" above to teach the AI new school facts.</p>
+          </div>
+        `;
+        return;
+      }
+
+      listEl.innerHTML = data.documents.map(doc => {
+        return `
+          <div class="p-3 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/70 rounded-xl flex items-center justify-between gap-3 group">
+            <div class="min-w-0 flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 flex items-center justify-center shrink-0 font-mono text-xs font-bold">
+                TXT
+              </div>
+              <div class="min-w-0">
+                <div class="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">${escapeHtml(doc.filename)}</div>
+                <div class="flex items-center gap-2 text-[0.65rem] text-slate-400 mt-0.5">
+                  <span class="text-emerald-600 dark:text-emerald-400 font-semibold">${doc.chunk_count} chunks</span>
+                  <span>•</span>
+                  <span>${doc.word_count} words</span>
+                  <span>•</span>
+                  <span>Active in RAG</span>
+                </div>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0">
+              <button onclick="previewDocChunks('${doc.id}', '${escapeHtml(doc.filename)}')" 
+                      class="px-2 py-1 rounded bg-slate-200/80 dark:bg-slate-700/80 hover:bg-emerald-100 dark:hover:bg-emerald-900 text-[0.65rem] font-semibold text-slate-700 dark:text-slate-200 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors">
+                Inspect Chunks
+              </button>
+              <button onclick="deleteStudioDocument('${doc.id}', '${escapeHtml(doc.filename)}')" 
+                      class="p-1 rounded text-slate-400 hover:text-rose-500 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                      title="Remove file">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+      return;
+    }
+  } catch (err) {
+    console.warn("Could not load backend documents, falling back to local memory store:", err);
+  }
+
+  // Fallback to DynamicKnowledgeStore in browser memory if server is offline
+  DynamicKnowledgeStore.init();
+  const docs = DynamicKnowledgeStore.documents;
 
   let totalChunks = 0;
   let totalWords = 0;
@@ -1124,11 +1369,11 @@ function renderStudioDocuments() {
           </div>
         </div>
         <div class="flex items-center gap-1.5 shrink-0">
-          <button onclick="previewDocChunks('${doc.id}')" 
+          <button onclick="previewDocChunks('${doc.id}', '${escapeHtml(doc.filename)}')" 
                   class="px-2 py-1 rounded bg-slate-200/80 dark:bg-slate-700/80 hover:bg-emerald-100 dark:hover:bg-emerald-900 text-[0.65rem] font-semibold text-slate-700 dark:text-slate-200 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors">
             Inspect Chunks
           </button>
-          <button onclick="deleteStudioDocument('${doc.id}')" 
+          <button onclick="deleteStudioDocument('${doc.id}', '${escapeHtml(doc.filename)}')" 
                   class="p-1 rounded text-slate-400 hover:text-rose-500 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
                   title="Remove file">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1152,10 +1397,24 @@ function handleKnowledgeFileUpload(e) {
       return;
     }
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       const content = event.target.result;
+
+      // 1. Send via AJAX to backend to save into school_data/ and reindex RAG
+      try {
+        await fetch(`${API_BASE_URL}/api/upload`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ filename: file.name, content: content })
+        });
+      } catch (err) {
+        console.warn("Could not save to backend server directly:", err);
+      }
+
+      // 2. Also keep in client-side memory
       DynamicKnowledgeStore.addDocument(file.name, content);
       loadedCount++;
+
       if (loadedCount === files.length) {
         renderStudioDocuments();
         showToast(`🧠 Ingested ${loadedCount} school text file(s) into AI Knowledge Store!`);
@@ -1188,12 +1447,21 @@ function loadSampleSchoolDataFiles() {
   sampleFiles.forEach(sf => {
     fetch(sf.path)
       .then(res => res.text())
-      .then(text => {
+      .then(async text => {
+        // Also upload to server
+        try {
+          await fetch(`${API_BASE_URL}/api/upload`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ filename: sf.name, content: text })
+          });
+        } catch (e) {}
+
         DynamicKnowledgeStore.addDocument(sf.name, text);
         completed++;
         if (completed === sampleFiles.length) {
           renderStudioDocuments();
-          showToast(`⚡ Successfully loaded 3 IIS school data files into AI!`);
+          showToast(`⚡ Successfully synced 3 IIS school data files into AI!`);
         }
       })
       .catch(err => {
@@ -1203,21 +1471,41 @@ function loadSampleSchoolDataFiles() {
   });
 }
 
-function deleteStudioDocument(docId) {
-  DynamicKnowledgeStore.removeDocument(docId);
-  renderStudioDocuments();
-  showToast('🗑️ Document removed from knowledge store');
-}
-
-function clearCustomKnowledgeBase() {
-  if (confirm('Clear all uploaded school data files? The AI will revert to default knowledge.')) {
-    DynamicKnowledgeStore.clearAll();
+async function deleteStudioDocument(docId, filename) {
+  if (confirm(`Remove '${filename || 'document'}' from the AI Knowledge Store?`)) {
+    try {
+      await fetch(`${API_BASE_URL}/api/delete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename: filename })
+      });
+    } catch (err) {
+      console.warn("Backend delete skipped:", err);
+    }
+    DynamicKnowledgeStore.removeDocument(docId);
     renderStudioDocuments();
-    showToast('🧹 Knowledge store cleared');
+    showToast('🗑️ Document removed from knowledge store');
   }
 }
 
-function previewDocChunks(docId) {
+function clearCustomKnowledgeBase() {
+  if (confirm('Clear all custom school data files from browser memory? The AI will revert to default school records.')) {
+    DynamicKnowledgeStore.clearAll();
+    renderStudioDocuments();
+    showToast('🧹 Local knowledge store cleared');
+  }
+}
+
+function previewDocChunks(docId, filename) {
+  // Check backendDocs first
+  const serverDoc = (AppState.backendDocs || []).find(d => d.id === docId || d.filename === filename);
+  if (serverDoc && serverDoc.chunks && serverDoc.chunks.length > 0) {
+    const sampleChunks = serverDoc.chunks.slice(0, 3).map((c, i) => `[Chunk ${c.chunk_index}]: "${c.text.substring(0, 120)}..."`).join('\n\n');
+    alert(`🔍 RAG Chunks Inspector for '${serverDoc.filename}':\n\nTotal Chunks: ${serverDoc.chunk_count}\n\nSample Chunks:\n\n${sampleChunks}`);
+    return;
+  }
+
+  // Fallback to DynamicKnowledgeStore
   DynamicKnowledgeStore.init();
   const doc = DynamicKnowledgeStore.documents.find(d => d.id === docId);
   if (!doc) return;

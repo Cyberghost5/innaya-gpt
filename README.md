@@ -1,92 +1,118 @@
-# 🎓 Innaya-GPT — Innayatullah International School AI Companion
-
-**Innaya-GPT** is a modern, intuitive, and accessible AI chatbot interface designed specifically for high school students at **Innayatullah International School (IIS)**.
-
----
-
-## 🌟 Key Features
-
-### 1. 📐 Layout & Structure
-* **Responsive Full-Screen Dashboard**: Clean two-column desktop interface with collapsible sidebar and a full-height centered chat feed.
-* **Collapsible Left Sidebar**:
-  * **Brand Identity**: Custom vector robot mascot badge with graduation cap and school crest, title **Innaya-GPT**, version pill, and school sub-label.
-  * **Actions**: `+ New Chat` button with `Ctrl+K` keyboard shortcut support.
-  * **Search**: Real-time topic filter for searching previous conversations.
-  * **Recent Topics List**: Categorized conversations with topic-specific icons (Feeding Timetable, Principal's Name, Exam Guidelines, Robotics Club, etc.) and delete options.
-  * **Campus Resources**: Quick links to the Scholars' Dining Hall, Sultan Bello Library Hub, and School Emergency Hotline.
-  * **Sidebar Footer**: Animated **Light / Dark Mode** toggle and student profile card (*Mustapha A. • Grade 11 Science • Emerald Falcon*).
-* **Main Chat Window (Center)**:
-  * **Top Navigation Bar**: Sidebar collapse toggle, active chat topic with category badges (*Campus Life*, *Academics*, *Administration*, *Guidelines*), export conversation button, clear messages button, and emergency directory modal.
-  * **Dynamic Welcome Screen**: Interactive mascot greeting and 6 prompt suggestion cards (*Feeding Timetable*, *Principal & Leadership*, *Exams & Academic Dates*, *Robotics & Clubs*, *Uniform & Grooming*, *Library & E-Resources*).
-  * **Left-Aligned AI Bubbles**: Soft academic green/blue tint in light mode (`bg-emerald-50/70`) and sleek slate in dark mode (`dark:bg-slate-800/90`), custom robot mascot avatar, timestamp, copy button, speech playback (TTS), and helpful/unhelpful rating buttons.
-  * **Right-Aligned User Bubbles**: High-contrast academic emerald/teal gradient (`bg-gradient-to-r from-emerald-800 to-teal-900`), crisp white text, student avatar, timestamp, and read checkmark.
-  * **Typing Indicator**: Animated 3-dot bouncing wave animation while the AI processes queries.
-* **Input Area (Bottom Sticky)**:
-  * **Quick Suggestion Pills**: Tap to ask about lunch menus, principal's office, exam rules, dress code, or library hours.
-  * **Attachment Uploader**: Supports attaching homework, syllabus files, and documents with an interactive removable chip preview.
-  * **Auto-Growing Input**: Multi-line textarea with `Enter` to send and `Shift+Enter` for newline.
-  * **Speech-to-Text**: Built-in voice input microphone powered by the Web Speech API with recording animation.
-  * **Paper-Plane Send Button**: Transitions to active brand color when text is typed.
-  * **Official Academic Disclaimer**: Clarifying that administrative notices should be confirmed with the school desk.
+# 🎓 Innaya-GPT: Local Offline AI Agent & RAG System
+### *Innayatullah International School, Iwo, Osun State*
+**Educational AI & Machine Learning Project for SS3 Students**
 
 ---
 
-## 🎨 Styling & Theming
-* **Color Palette**:
-  * Academic Emerald: `#0f766e` / `#0d9488`
-  * Deep Academic Navy: `#0e2439` / `#1e293b`
-  * Gold Crest Accent: `#eab308`
-* **Typography**: Clean Google Fonts typography using **Plus Jakarta Sans** and **JetBrains Mono**.
-* **Dark Mode**: Native Tailwind dark mode support with smooth transitions, custom dark scrollbars, and persistent `localStorage` theme state.
-* **Mobile-First**: Smooth off-canvas drawer on mobile screens with backdrop click-to-close.
+## 🌟 Overview
+**Innaya-GPT** is a 100% offline, local AI chatbot built specifically for high school students and teachers at **Innayatullah International School (IIS)** in Iwo, Osun State.
+
+Powered by **Ollama** (using the lightweight `llama3.2:1b` model optimized for 8GB RAM CPU-only computers) and **Streamlit**, it implements **Retrieval-Augmented Generation (RAG)**. The AI answers questions about school operations strictly grounded in plain `.txt` files that students and teachers feed into the system.
 
 ---
 
-## 📚 Built-in Knowledge Base for Innayatullah International School
-Innaya-GPT comes pre-loaded with comprehensive school context:
-* 🍽️ **Feeding Timetable**: Daily breakfast, break snacks, boarders' dinner, and complete Monday–Friday lunch menu with vegetarian alternatives.
-* 🎓 **Principal & Leadership**: Profile for Principal Dr. Hajia Amina Innayatullah, visiting hours (Mon–Fri: 10 AM–1 PM), Vice Principals, Head of Senior School, and Student Counselor.
-* 📅 **Examinations & Grading**: 2026/2027 academic exam dates, Continuous Assessment breakdown (CA1 15%, CA2 15%, Homework 10%, Final 60%), official grading scale (A1 to F9 with GPA), and examination hall rules.
-* 🤖 **Clubs & Societies**: Robotics & AI Club, Literary & Debate Society, JETS Club, Model UN, Sports Academy, and Music Guild.
-* 👔 **Uniform & Grooming**: Senior boys' and girls' blazers, school tie, modesty scarf/hijab, and sports kit rules.
-* 📖 **Sultan Bello Library Hub**: Opening hours, digital JSTOR/EBSCO terminals, 10-year past question bank, and book borrowing rules.
-* 🚌 **Transportation & Clinic**: Bus routes across city corridors and 24/7 clinic details.
+## 🔬 System Architecture
+
+```
+  📁 school_data/*.txt 
+  (student_population.txt, feeding_timetable.txt, principals_profile.txt, etc.)
+            │
+            ▼
+  ┌─────────────────────────────────────────────────────────┐
+  │ 1. INGESTION & CHUNKING (rag_engine.py)                 │
+  │    Splits text files into semantic paragraphs.          │
+  └─────────────────────────┬───────────────────────────────┘
+                            │
+                            ▼
+  ┌─────────────────────────────────────────────────────────┐
+  │ 2. VECTOR RETRIEVAL & TF-IDF SCORING                    │
+  │    Finds matching chunks for the student's question.    │
+  └─────────────────────────┬───────────────────────────────┘
+                            │
+                            ▼
+  ┌─────────────────────────────────────────────────────────┐
+  │ 3. LOCAL OLLAMA INFERENCE (llama3.2:1b on port 11434)   │
+  │    Generates conversational response using ONLY facts.  │
+  └─────────────────────────┬───────────────────────────────┘
+                            │
+                            ▼
+  ┌─────────────────────────────────────────────────────────┐
+  │ 4. UNIFIED WEB INTERFACE (index.html via AJAX Fetch)    │
+  │    Word-by-word streaming typewriter response +         │
+  │    drag-and-drop .txt data feeding studio modal.        │
+  └─────────────────────────────────────────────────────────┘
+```
 
 ---
 
-## 🚀 How to Run Locally
-
-Because the project is built with HTML5, vanilla JavaScript, and CDN Tailwind CSS:
-
-1. **Directly in Any Web Browser**:
-   * Double-click or open `index.html` in Chrome, Edge, Firefox, or Safari:
-     ```
-     file:///c:/laragon/www/innaya-gpt/index.html
-     ```
-
-2. **Via Laragon Web Server**:
-   * If Laragon is running, open:
-     ```
-     http://localhost/innaya-gpt/
-     ```
-     or
-     ```
-     http://innaya-gpt.test
-     ```
+## 💻 Hardware Compatibility (8GB RAM, CPU-Only)
+* **Target Environment**: School computer lab desktops/laptops with **8GB RAM and no dedicated graphics card**.
+* **Primary LLM**: `llama3.2:1b` (Meta's 1B model, requires only ~1.3 GB RAM/disk, runs fast on Intel/AMD CPUs).
+* **Alternative Lightweight LLMs**: `phi3:mini` (Microsoft, 3.8B) or `llama3.2:3b`.
 
 ---
 
-## 📁 File Structure
+## 🚀 Quick Start Guide
+
+### Step 1: Install & Start Ollama
+1. Download Ollama for Windows from [ollama.com](https://ollama.com).
+2. Open Command Prompt / PowerShell and run:
+   ```bash
+   ollama run llama3.2:1b
+   ```
+*(Keep this terminal open in the background. Ollama is now running locally on port 11434).*
+
+### Step 2: Launch Innaya-GPT
+Double-click **`run_innaya_gpt.bat`** OR run in terminal:
+```bash
+python server.py
+```
+The browser will automatically open to **`http://localhost:5000`** (or access via Laragon at `http://localhost/innaya-gpt/`).
+
+---
+
+## 📁 Feeding New School Data (.txt Files)
+
+Students can feed the AI in two ways:
+1. **Via the Web Interface**: Click **"Feed AI Data (.txt)"** in the top navigation bar and drop any `.txt` file into the upload zone.
+2. **Via the File System**: Drop any `.txt` file directly into the `school_data/` folder and it will be indexed immediately.
+
+### Pre-loaded School Knowledge:
+* `school_data/student_population.txt` — 840 registered students, day/boarder numbers, class breakdown.
+* `school_data/feeding_timetable.txt` — Scholars' Dining Hall meal times, daily menus (Jollof, Pasta, Egusi/Pounded yam).
+* `school_data/principals_profile.txt` — Principal Dr. Hajia Amina Innayatullah, office hours (Mon–Fri, 10 AM–1 PM).
+* `school_data/waec_and_academics.txt` — CA score breakdown, A1–F9 grading table, examination hall rules.
+* `school_data/clubs_and_hostel.txt` — Robotics Guild, Debate Society, hostel schedules, lights-out times.
+
+---
+
+## 📁 Repository Directory Structure
 
 ```
 innaya-gpt/
-├── assets/
-│   └── mascot.svg         # High-resolution vector mascot & school crest
-├── css/
-│   └── styles.css         # Custom animations, typing dots, typography, table styles
+├── school_data/                # 📂 Data Feeding Folder (Drop .txt files here)
+│   ├── student_population.txt  # Enrollment numbers and demographics
+│   ├── feeding_timetable.txt   # Dining hall schedule and weekly menus
+│   ├── principals_profile.txt  # Principal credentials and visiting hours
+│   ├── waec_and_academics.txt  # Grading scale and exam guidelines
+│   └── clubs_and_hostel.txt    # Extracurriculars and boarding rules
+├── index.html                  # 🎨 Unified Web Interface (Tailwind CSS, Dark Mode, Voice)
 ├── js/
-│   ├── knowledge-base.js  # IIS school data & intelligent answer generator
-│   └── app.js             # State management, Markdown block parser, voice & audio TTS
-├── index.html             # Main dashboard layout, Tailwind CSS, semantic HTML5
-└── README.md              # Project documentation
+│   ├── app.js                  # ⚡ AJAX controller, SSE token streaming, audio, state
+│   └── knowledge-base.js       # In-browser fallback knowledge store
+├── css/
+│   └── styles.css              # Custom styling, animations, table rules
+├── backend/
+│   └── app.py                  # 🚀 Multi-threaded Python server & RAG API (zero-dependency)
+├── server.py                   # ⚡ One-command root server launcher
+├── rag_engine.py               # 🧠 Local RAG chunking and vector search engine
+├── run_innaya_gpt.bat          # ⚡ One-click Windows batch launcher
+├── STUDENT_LAB_GUIDE.md        # 📖 SS3 Classroom Lab Manual & Questions
+├── assets/                     # School crest vector mascot
+└── README.md                   # This project guide
 ```
+
+---
+
+## 👨‍🏫 Teaching Plan for SS3 Classes
+For a complete 4-stage laboratory lesson plan with student exercises and review questions, open [STUDENT_LAB_GUIDE.md](file:///c:/laragon/www/innaya-gpt/STUDENT_LAB_GUIDE.md).
